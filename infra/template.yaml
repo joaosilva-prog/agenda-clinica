@@ -161,7 +161,15 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepo}:ref:refs/heads/main
+              # Só o branch main do repositório do projeto. O GitHub pode mandar o nome
+              # simples (usuario/repo) ou com o número de identificação (usuario@123/repo@456).
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubRepo}:ref:refs/heads/main
+                  - !Sub
+                    - repo:${Dono}@*/${Repo}@*:ref:refs/heads/main
+                    - Dono: !Select [0, !Split ["/", !Ref GitHubRepo]]
+                      Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
       Policies:
         - PolicyName: publicar-funcao
           PolicyDocument:
