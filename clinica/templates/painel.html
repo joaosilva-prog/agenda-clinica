@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Painel · {{ clinica }}{% endblock %}
+{% block conteudo %}
+<section class="cartao">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+    <h1 style="margin:0">Solicitações de horário</h1>
+    <form method="post" action="{{ url_for('sair') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <button class="discreto" type="submit">Sair</button>
+    </form>
+  </div>
+  {% if solicitacoes %}
+  <table>
+    <thead><tr><th>Recebida em (UTC)</th><th>Responsável</th><th>Telefone</th><th>Período</th><th>Situação</th></tr></thead>
+    <tbody>
+    {% for s in solicitacoes %}
+      <tr>
+        <td>{{ s.criado_em[:16].replace('T', ' ') }}</td>
+        <td>{{ s.nome }}</td>
+        <td>{{ s.telefone | telefone }}</td>
+        <td>{{ periodos.get(s.periodo, s.periodo) }}</td>
+        <td>
+          {% if s.atendida %}Atendida{% else %}
+          <form method="post" action="{{ url_for('marcar_atendida', chave=s.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <button class="discreto" type="submit">Marcar atendida</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nenhuma solicitação ainda.</p>
+  {% endif %}
+</section>
+{% endblock %}

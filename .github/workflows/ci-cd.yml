@@ -1,0 +1,103 @@
+name: CI/CD
+
+# Em todo pull request: verifica qualidade e roda os testes.
+# Em todo push no main: faz o mesmo e, se tudo passar, publica na AWS.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # para entrar na AWS sem chave (OpenID Connect)
+  contents: read
+
+jobs:
+  qualidade:
+    name: Lint e testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (Ruff, com regras de segurança)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Testes unitários e de integração (cobertura mínima de 80%)
+        run: pytest --junitxml=resultado-testes.xml --cov-report=xml
+
+      - name: Resumo da qualidade
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          t = ET.parse("resultado-testes.xml").getroot()
+          t = t if t.tag == "testsuite" else t[0]
+          c = ET.parse("coverage.xml").getroot()
+          print("## Qualidade")
+          print(f"- Testes: {t.get('tests')} executados, {t.get('failures')} falhas, {t.get('errors')} erros")
+          print(f"- Cobertura de testes: {float(c.get('line-rate')) * 100:.1f}%")
+          EOF
+
+      - name: Guardar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-qualidade
+          path: |
+            resultado-testes.xml
+            coverage.xml
+
+  implantar:
+    name: Publicar na AWS
+    needs: qualidade
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # mesma versão da Lambda
+
+      - name: Entrar na AWS (OpenID Connect, sem chave)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Montar o pacote da aplicação
+        run: |
+          mkdir pacote
+          pip install -r requirements.txt --target pacote
+          cp -r clinica index.py pacote/
+          cd pacote && zip -qr ../aplicacao.zip . -x "*/__pycache__/*"
+
+      - name: Publicar na Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name "${{ vars.AWS_LAMBDA_FUNCTION }}" \
+            --zip-file fileb://aplicacao.zip > /dev/null
+          aws lambda wait function-updated --function-name "${{ vars.AWS_LAMBDA_FUNCTION }}"
+          echo "Versão ${{ github.sha }} publicada."
+
+      - name: Teste de fumaça (o site responde?)
+        run: |
+          url="${{ vars.AWS_API_URL }}"
+          for tentativa in $(seq 1 10); do
+            if curl -fsS "$url/health" && curl -fsS -o /dev/null "$url/"; then
+              echo; echo "Site no ar: $url"; exit 0
+            fi
+            echo "Tentativa $tentativa falhou, aguardando 10 s..."; sleep 10
+          done
+          echo "O site não respondeu depois da publicação."; exit 1

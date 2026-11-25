@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+resultado-testes.xml
+# pacote gerado pelo pipeline
+pacote/
+aplicacao.zip

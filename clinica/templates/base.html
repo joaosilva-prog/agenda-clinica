@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ clinica }}{% endblock %}</title>
+  <style>
+    :root { --cor: #3d6b8f; --clara: #eef4f8; --texto: #22313d; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--texto); background: #fafbfc; line-height: 1.5; }
+    header { background: var(--cor); color: #fff; padding: 1.2rem 1rem; }
+    header a { color: #fff; text-decoration: none; }
+    header .nome { font-size: 1.3rem; font-weight: 700; }
+    header .cidade { opacity: .85; font-size: .9rem; }
+    main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    .cartao { background: #fff; border: 1px solid #dde3e8; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    label { display: block; font-weight: 600; margin: .8rem 0 .3rem; }
+    input[type=text], input[type=tel], input[type=password], select { width: 100%; padding: .6rem; border: 1px solid #b9c3cc; border-radius: 6px; font-size: 1rem; }
+    .check { display: flex; gap: .5rem; align-items: flex-start; font-weight: 400; }
+    button { background: var(--cor); color: #fff; border: 0; border-radius: 6px; padding: .7rem 1.2rem; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
+    button.discreto { background: none; color: var(--cor); border: 1px solid var(--cor); padding: .35rem .7rem; margin: 0; font-size: .9rem; }
+    .erros { background: #fdecec; border: 1px solid #f3b9b9; border-radius: 6px; padding: .6rem 1rem; }
+    .aviso { background: var(--clara); border-radius: 6px; padding: .6rem 1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #e3e8ec; font-size: .95rem; }
+    .pequeno { font-size: .85rem; color: #5d6b77; }
+    footer { text-align: center; font-size: .8rem; color: #7a8792; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{{ url_for('inicio') }}"><div class="nome">{{ clinica }}</div></a>
+    <div class="cidade">Psicologia infantil · {{ cidade }}</div>
+  </header>
+  <main>
+    {% with mensagens = get_flashed_messages() %}{% for m in mensagens %}<p class="aviso">{{ m }}</p>{% endfor %}{% endwith %}
+    {% block conteudo %}{% endblock %}
+  </main>
+  <footer>{{ clinica }} · {{ cidade }}</footer>
+</body>
+</html>

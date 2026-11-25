@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<section class="cartao">
+  <h1>Atendimento psicológico para crianças</h1>
+  <p>Avaliação e acompanhamento psicológico infantil, com orientação para pais e responsáveis.</p>
+  <p>Deixe seu contato e a clínica retorna para combinar o melhor horário.</p>
+</section>
+
+<section class="cartao">
+  <h2>Solicitar horário</h2>
+  {% if erros %}
+  <div class="erros" role="alert"><ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  <form method="post" action="{{ url_for('solicitar') }}">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <label for="nome">Nome do responsável</label>
+    <input type="text" id="nome" name="nome" maxlength="100" required value="{{ dados.get('nome', '') }}">
+
+    <label for="telefone">Telefone ou WhatsApp com DDD</label>
+    <input type="tel" id="telefone" name="telefone" required placeholder="(35) 99999-9999" value="{{ dados.get('telefone', '') }}">
+
+    <label for="periodo">Período de preferência</label>
+    <select id="periodo" name="periodo" required>
+      <option value="">Escolha</option>
+      {% for valor, texto in periodos.items() %}
+      <option value="{{ valor }}" {% if dados.get('periodo') == valor %}selected{% endif %}>{{ texto }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="check"><input type="checkbox" name="consentimento" required>
+      <span>Autorizo a clínica a usar estes dados apenas para entrar em contato comigo sobre o agendamento.</span></label>
+
+    <button type="submit">Enviar solicitação</button>
+    <p class="pequeno">Não informe dados de saúde da criança aqui. Isso será conversado diretamente com a psicóloga.</p>
+  </form>
+</section>
+<p class="pequeno"><a href="{{ url_for('login') }}">Área da clínica</a></p>
+{% endblock %}
